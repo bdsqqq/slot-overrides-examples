@@ -21,7 +21,7 @@ const NoPermissionFeedback = () => {
   return (
     <Tabs value={currentTab} defaultValue="warn">
       <TabsContent value="warn">
-        Eh, can&apos;t do it man,{' '}
+        You don&apos;t have permission to do this,{' '}
         <Button size="sm" onClick={() => setCurrentTab('form')}>
           contact admin
         </Button>
