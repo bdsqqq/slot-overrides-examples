@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/button';
 import {
   Popover,
   PopoverContent,
@@ -10,8 +11,8 @@ export default function Page() {
       <div>
         <Popover>
           <PopoverContent>hej do</PopoverContent>
-          <PopoverTrigger>
-            <button>Open</button>
+          <PopoverTrigger asChild>
+            <Button>Open</Button>
           </PopoverTrigger>
         </Popover>
       </div>
