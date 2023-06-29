@@ -6,14 +6,18 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-  TooltipProvider,
-} from '@/components/ui/tooltip';
 import { Slot } from '@/lib/Slot';
-import { forwardRef, useState } from 'react';
+import {
+  Children,
+  Fragment,
+  ReactElement,
+  ReactNode,
+  cloneElement,
+  createElement,
+  forwardRef,
+  isValidElement,
+  useState,
+} from 'react';
 
 const NoPermissionFeedback = () => {
   const [currentTab, setCurrentTab] = useState<'warn' | 'form'>('warn');
@@ -80,51 +84,47 @@ export default function Page() {
   }
 
   return (
-    <TooltipProvider>
-      <main className="flex min-h-screen flex-col items-center justify-between p-24">
-        <section className="flex gap-16">
-          <ul>
-            <li>you can add up to 3 teams</li>
-            <li>you can&apos;t add teams if you don&apos;t have permission</li>
-            <li>you can&apos;t add teams if you&apos;ve reached the limit</li>
-          </ul>
+    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+      <section className="flex gap-16">
+        <ul>
+          <li>you can add up to 3 teams</li>
+          <li>you can&apos;t add teams if you don&apos;t have permission</li>
+          <li>you can&apos;t add teams if you&apos;ve reached the limit</li>
+        </ul>
 
-          <ul>
-            <li className="flex items-center gap-2">
-              can manage teams:{' '}
-              <span className="w-8">{canAddTeam ? 'yes' : 'no'}</span>{' '}
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setCanAddTeam((prev) => !prev);
-                }}
-              >
-                Toggle
-              </Button>
-            </li>
-            <li className="flex items-center gap-2">
-              locked: <span className="w-8">{locked ? 'yes' : 'no'}</span>
-            </li>
-          </ul>
-        </section>
-        <div className="flex gap-16">
-          <Tooltip open={locked}>
-            <TooltipTrigger asChild>
-              <Lock locked={locked} lockedFeedback={LockedFeedback}>
-                <Button aria-disabled={locked} onClick={addTeam}>
-                  Add new team
-                </Button>
-              </Lock>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              Demoing cool behaviour on click now!
-            </TooltipContent>
-          </Tooltip>
+        <ul>
+          <li className="flex items-center gap-2">
+            can manage teams:{' '}
+            <span className="w-8">{canAddTeam ? 'yes' : 'no'}</span>{' '}
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setCanAddTeam((prev) => !prev);
+              }}
+            >
+              Toggle
+            </Button>
+          </li>
+          <li className="flex items-center gap-2">
+            locked: <span className="w-8">{locked ? 'yes' : 'no'}</span>
+          </li>
+        </ul>
+      </section>
+      <div className="flex gap-16">
+        <Lock locked={locked} lockedFeedback={LockedFeedback}>
+          <Button aria-disabled={locked} onClick={addTeam}>
+            Add new team
+          </Button>
+        </Lock>
 
-          <p className="tabular-nums">Team ammount: {teamAmmount}</p>
-        </div>
-      </main>
-    </TooltipProvider>
+        <LockWithoutSlot locked={locked} lockedFeedback={LockedFeedback}>
+          <Button aria-disabled={locked} onClick={addTeam}>
+            Add new team (no slot)
+          </Button>
+        </LockWithoutSlot>
+        <p className="tabular-nums">Team ammount: {teamAmmount}</p>
+      </div>
+    </main>
   );
 }
 
@@ -151,9 +151,41 @@ const Lock = forwardRef<
           {children}
         </Slot>
       </PopoverTrigger>
-      <PopoverContent>{lockedFeedback}</PopoverContent>
+      <PopoverContent align="end">{lockedFeedback}</PopoverContent>
     </Popover>
   );
 });
-
 Lock.displayName = 'Lock';
+
+/**
+ * @see: https://github.com/radix-ui/primitives/pull/2234#issuecomment-1613000587
+ */
+const LockWithoutSlot = forwardRef<
+  HTMLButtonElement,
+  React.PropsWithChildren<{
+    locked: boolean;
+    lockedFeedback: React.ReactNode;
+  }>
+>(({ children, locked, lockedFeedback, ...rest }, ref) => {
+  const child = Children.only(children);
+  if (!locked) return <>{child}</>;
+
+  // Not too happy about this bit, but it makes sure cloneElement gets a valid element (not a string and other misc types allowed by ReactNode)
+  const isValid = isValidElement<HTMLButtonElement & { onClick?: () => void }>(
+    child
+  );
+  if (!isValid)
+    throw new Error(
+      `LockWithoutSlot's child must be a valid react element, see: `
+    );
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild {...rest} ref={ref}>
+        {cloneElement(child, { onClick: () => {} })}
+      </PopoverTrigger>
+      <PopoverContent align="end">{lockedFeedback}</PopoverContent>
+    </Popover>
+  );
+});
+LockWithoutSlot.displayName = 'LockWithoutSlot';
