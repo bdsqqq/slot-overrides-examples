@@ -6,8 +6,14 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+  TooltipProvider,
+} from '@/components/ui/tooltip';
 import { Slot } from '@/lib/Slot';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 
 const NoPermissionFeedback = () => {
   const [currentTab, setCurrentTab] = useState<'warn' | 'form'>('warn');
@@ -16,7 +22,7 @@ const NoPermissionFeedback = () => {
     <Tabs value={currentTab} defaultValue="warn">
       <TabsContent value="warn">
         Eh, can&apos;t do it man,{' '}
-        <Button variant={'link'} onClick={() => setCurrentTab('form')}>
+        <Button size="sm" onClick={() => setCurrentTab('form')}>
           contact admin
         </Button>
       </TabsContent>
@@ -74,53 +80,61 @@ export default function Page() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <section className="flex gap-16">
-        <ul>
-          <li>you can add up to 3 teams</li>
-          <li>you can&apos;t add teams if you don&apos;t have permission</li>
-          <li>you can&apos;t add teams if you&apos;ve reached the limit</li>
-        </ul>
+    <TooltipProvider>
+      <main className="flex min-h-screen flex-col items-center justify-between p-24">
+        <section className="flex gap-16">
+          <ul>
+            <li>you can add up to 3 teams</li>
+            <li>you can&apos;t add teams if you don&apos;t have permission</li>
+            <li>you can&apos;t add teams if you&apos;ve reached the limit</li>
+          </ul>
 
-        <ul>
-          <li className="flex items-center gap-2">
-            can manage teams:{' '}
-            <span className="w-8">{canAddTeam ? 'yes' : 'no'}</span>{' '}
-            <Button
-              variant="secondary"
-              onClick={() => {
-                setCanAddTeam((prev) => !prev);
-              }}
-            >
-              Toggle
-            </Button>
-          </li>
-          <li className="flex items-center gap-2">
-            locked: <span className="w-8">{locked ? 'yes' : 'no'}</span>
-          </li>
-        </ul>
-      </section>
-      <div className="flex gap-16">
-        <Lock locked={locked} lockedFeedback={LockedFeedback}>
-          <Button aria-disabled={locked} onClick={addTeam}>
-            Add new team
-          </Button>
-        </Lock>
+          <ul>
+            <li className="flex items-center gap-2">
+              can manage teams:{' '}
+              <span className="w-8">{canAddTeam ? 'yes' : 'no'}</span>{' '}
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setCanAddTeam((prev) => !prev);
+                }}
+              >
+                Toggle
+              </Button>
+            </li>
+            <li className="flex items-center gap-2">
+              locked: <span className="w-8">{locked ? 'yes' : 'no'}</span>
+            </li>
+          </ul>
+        </section>
+        <div className="flex gap-16">
+          <Tooltip open={locked}>
+            <TooltipTrigger asChild>
+              <Lock locked={locked} lockedFeedback={LockedFeedback}>
+                <Button aria-disabled={locked} onClick={addTeam}>
+                  Add new team
+                </Button>
+              </Lock>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">
+              Demoing cool behaviour on click now!
+            </TooltipContent>
+          </Tooltip>
 
-        <p className="tabular-nums">Team ammount: {teamAmmount}</p>
-      </div>
-    </main>
+          <p className="tabular-nums">Team ammount: {teamAmmount}</p>
+        </div>
+      </main>
+    </TooltipProvider>
   );
 }
 
-const Lock = ({
-  children,
-  locked,
-  lockedFeedback,
-}: React.PropsWithChildren<{
-  locked: boolean;
-  lockedFeedback: React.ReactNode;
-}>) => {
+const Lock = forwardRef<
+  HTMLElement,
+  React.PropsWithChildren<{
+    locked: boolean;
+    lockedFeedback: React.ReactNode;
+  }>
+>(({ children, locked, lockedFeedback, ...rest }, ref) => {
   if (!locked) return <>{children}</>;
 
   return (
@@ -131,6 +145,8 @@ const Lock = ({
             // absolutely nothing lol
           }}
           dangerouslyoverridehandlersinsteadofcomposing={['onClick']}
+          {...rest}
+          ref={ref}
         >
           {children}
         </Slot>
@@ -138,4 +154,6 @@ const Lock = ({
       <PopoverContent>{lockedFeedback}</PopoverContent>
     </Popover>
   );
-};
+});
+
+Lock.displayName = 'Lock';
