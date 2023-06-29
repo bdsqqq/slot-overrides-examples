@@ -1,34 +1,44 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+Example created for the [PR #2234 on Radix primitives](https://github.com/radix-ui/primitives/pull/2234).
 
-## Getting Started
+The highlight of this example is the `<Lock>` component in [/src/app/page.tsx](https://github.com/bdsqqq/slot-overrides-examples/blob/main/src/app/page.tsx#L131):
+```tsx
+const Lock = forwardRef<
+  HTMLElement,
+  React.PropsWithChildren<{
+    locked: boolean;
+    lockedFeedback: React.ReactNode;
+  }>
+>(({ children, locked, lockedFeedback, ...rest }, ref) => {
+  if (!locked) return <>{children}</>;
 
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Slot
+          onClick={() => {
+            // Absolutely nothing lol
+          }}
+          dangerouslyoverridehandlersinsteadofcomposing={['onClick']}
+          {...rest}
+          ref={ref}
+        >
+          {children}
+        </Slot>
+      </PopoverTrigger>
+      <PopoverContent>{lockedFeedback}</PopoverContent>
+    </Popover>
+  );
+});
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+This component allows for the composition of behavior with any tags that use `onClick`, conditionally preventing their handler from running while providing useful feedback through a popover.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+A usage example is:
+```tsx
+<Lock locked={locked} lockedFeedback={LockedFeedback}>
+  <Button aria-disabled={locked} onClick={addTeam}>
+    Add new team
+  </Button>
+</Lock>
+```
+where `locked` is computed from user permissions and `LockedFeedback` provides contextual actions that surface solutions to each reason that can result in `locked == true` (this can be combined with an exhaustive pattern-matching solution like [ts-pattern](https://github.com/gvergnaud/ts-pattern) for better developer experience and type safety, but I chose not to include it for the sake of simplicity.)
